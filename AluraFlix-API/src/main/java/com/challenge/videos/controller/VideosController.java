@@ -2,6 +2,7 @@ package com.challenge.videos.controller;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
@@ -36,38 +37,39 @@ public class VideosController {
 
 	@GetMapping
 	@ResponseBody
-	public List<Videos> listarDespesas() {
-		return videosRepository.findAll();
+	public ResponseEntity<Stream<VideosDto>> listarVideos() {
+		List<Videos> videos = videosRepository.findAll();
+		return ResponseEntity.ok().body(videos.stream().map(VideosDto::new));
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<?> BuscaVideoPorId(@PathVariable(value = "id") Long id) {
-		if (videosRepository.existsById(id)) {
-			return ResponseEntity.ok().body(videosRepository.findById(id));
+	public ResponseEntity<VideosDto> BuscaVideoPorId(@PathVariable(value = "id") Long id) {
+		Optional<Videos> optional = videosRepository.findById(id);
+		if (optional.isPresent()) {
+			return ResponseEntity.ok(new VideosDto(optional.get()));
 		}
-		return ResponseEntity.badRequest().body("Video não encontrado");
+		return ResponseEntity.notFound().build();
 	}
 
 	@PostMapping
-	public ResponseEntity<?> CadastraVideo(@Valid @RequestBody VideosForm form) {
+	public ResponseEntity<VideosDto> CadastraVideo(@Valid @RequestBody VideosForm form) {
 		Videos video = form.transformaEmVideo(categoriaRepostiry);
 		if (videosRepository.existsById(video.getId())) {
-			return ResponseEntity.badRequest().body("Video Já cadastrado");
+			return ResponseEntity.badRequest().build();
 		}
-//		videosRepository.save(video);
+		videosRepository.save(video);
 		return ResponseEntity.ok(new VideosDto(video));
 	}
 
 	@PutMapping("/{id}")
 	@Transactional
-	public ResponseEntity<?> AtualizaVideo(@PathVariable(value = "id") Long id,
+	public ResponseEntity<VideosDto> AtualizaVideo(@PathVariable(value = "id") Long id,
 			@RequestBody @Valid VideosAtualizacaoForm form) {
 		Optional<Videos> optional = videosRepository.findById(id);
 		if (optional.isPresent()) {
 			Videos video = form.atualizar(id, videosRepository);
 			return ResponseEntity.ok(new VideosDto(video));
 		}
-
 		return ResponseEntity.notFound().build();
 	}
 
@@ -75,8 +77,8 @@ public class VideosController {
 	public ResponseEntity<?> DeletaVideo(@PathVariable(value = "id") Long id) {
 		if (videosRepository.existsById(id)) {
 			videosRepository.deleteById(id);
-			return ResponseEntity.ok().body("Video deletado com sucesso");
+			return ResponseEntity.ok().build();
 		}
-		return ResponseEntity.badRequest().body("Id não encontrado");
+		return ResponseEntity.badRequest().build();
 	}
 }

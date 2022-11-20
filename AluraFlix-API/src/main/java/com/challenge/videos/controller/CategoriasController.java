@@ -2,6 +2,7 @@ package com.challenge.videos.controller;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
@@ -33,32 +34,33 @@ public class CategoriasController {
 
 	@GetMapping
 	@ResponseBody
-	public List<Categorias> ListaCategorias() {
-		return categoriasRepository.findAll();
+	public ResponseEntity<Stream<CategoriasDto>> listarCategorias() {
+		List<Categorias> categorias = categoriasRepository.findAll();
+		return ResponseEntity.ok().body(categorias.stream().map(CategoriasDto::new));
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<?> BuscaCategoriaPorId(@PathVariable(value = "id") Long id) {
-		if (categoriasRepository.existsById(id)) {
-			return ResponseEntity.ok().body(categoriasRepository.findById(id));
+	public ResponseEntity<CategoriasDto> BuscaCategoriaPorId(@PathVariable(value = "id") Long id) {
+		Optional<Categorias> optional = categoriasRepository.findById(id);
+		if (optional.isPresent()) {
+			return ResponseEntity.ok().body(new CategoriasDto(optional.get()));
 		}
-		return ResponseEntity.badRequest().body("Não encontrado");
+		return ResponseEntity.badRequest().build();
 	}
 
 	@PostMapping
 	@Transactional
-	public ResponseEntity<?> CadastraCategoria(@Valid @RequestBody CategoriasForm form) {
+	public ResponseEntity<CategoriasDto> CadastraCategoria(@Valid @RequestBody CategoriasForm form) {
 		Categorias categoria = form.transformaEmCategorias(categoriasRepository);
-
 		if (categoriasRepository.existsById(categoria.getId())) {
-			return ResponseEntity.badRequest().body("Categoria já cadastrada");
+			return ResponseEntity.badRequest().build();
 		}
-//		categoriasRepository.save(categoria);
-		return ResponseEntity.ok().body(categoria);
+		categoriasRepository.save(categoria);
+		return ResponseEntity.ok().body(new CategoriasDto(categoria));
 	}
 
 	@PutMapping
-	public ResponseEntity<?> AtualizaCategorias(@PathVariable(value = "id") Long id,
+	public ResponseEntity<CategoriasDto> AtualizaCategorias(@PathVariable(value = "id") Long id,
 			@RequestBody @Valid CategoriasAtualizacaoForm form) {
 		Optional<Categorias> optional = categoriasRepository.findById(id);
 		if (optional.isPresent()) {
@@ -74,10 +76,9 @@ public class CategoriasController {
 			return ResponseEntity.badRequest().body("Esta categoria não pode ser deletada");
 		}
 		if (categoriasRepository.existsById(id)) {
-//			categoriasRepository.deleteById(id);
-			return ResponseEntity.ok().body("Categoria Deletada com sucesso");
+			categoriasRepository.deleteById(id);
+			return ResponseEntity.ok().build();
 		}
-
-		return ResponseEntity.badRequest().body("Id não encontrado");
+		return ResponseEntity.badRequest().build();
 	}
 }

@@ -2,7 +2,9 @@ package com.challenge.videos.modelo;
 
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -22,7 +24,7 @@ public class Categorias {
 	@NotEmpty(message = "O campo é obrigatório")
 	private String cor;
 	
-	@OneToMany(mappedBy = "categoria")
+	@OneToMany(cascade = CascadeType.ALL, mappedBy = "categoria", fetch = FetchType.LAZY)
 	private List<Videos> videos;
 
 	public Categorias() {
